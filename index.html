@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Inter, Arial, sans-serif; background: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.card { background: white; border-radius: 16px; padding: 40px 48px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); text-align: center; max-width: 420px; }
+h1 { font-size: 20px; color: #1e3a5f; margin-bottom: 8px; }
+p { font-size: 13px; color: #6b7280; margin-bottom: 28px; line-height: 1.6; }
+.btn { background: #1e3a5f; color: white; border: none; border-radius: 10px; padding: 14px 32px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; transition: background 0.2s; text-decoration: none; display: block; }
+.btn:hover { background: #2563eb; }
+.note { margin-top: 16px; font-size: 11px; color: #9ca3af; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:48px;margin-bottom:16px">🏭</div>
+  <h1>XFAB Bonus Simulator 2026</h1>
+  <p>Click the button below to download the simulator.<br/>The file will be saved as <strong>index.html</strong> — ready to open in any browser or upload to Netlify.</p>
+  <a id="dlbtn" class="btn">⬇️ Download index.html</a>
+  <div class="note">Works on Chrome, Safari, Edge, Firefox</div>
+</div>
+<script>
+const html = `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>XFAB Bonus Simulator 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"><\/script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Inter, Arial, sans-serif; background: #f8fafc; min-height: 100vh; }
+input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+const XFABS = [
+  { name:"US",     revenue:14.4, ebitdaTarget:-12 },
+  { name:"IL",     revenue:41.3, ebitdaTarget:0   },
+  { name:"Latvia", revenue:10.9, ebitdaTarget:-9  },
+  { name:"SG",     revenue:16.2, ebitdaTarget:2   },
+  { name:"UK",     revenue:3.2,  ebitdaTarget:0   },
+];
+const SCENARIOS = [1.5, 2.0, 2.5];
+function getDirRate(v,s) {
+  if (s===1.5) return v<=5e6?0.005:v<=10e6?0.0063:0.0075;
+  if (s===2.0) return v<=5e6?0.0065:v<=10e6?0.008:0.01;
+  return v<=5e6?0.0075:v<=10e6?0.01:0.0125;
+}
+function getBDRate(s) { return s===1.5?0.0075:s===2.0?0.01:0.0125; }
+function getXFRate(s,e) {
+  if (s===1.5) return e?0.0075:0.005;
+  if (s===2.0) return e?0.01:0.0075;
+  return e?0.0125:0.01;
+}
+function fmt(n)    { return "$"+Math.round(n).toLocaleString(); }
+function fmtM(n)   { return "$"+Number(n).toFixed(1)+"M"; }
+function pp(n,d=2) { return (n*100).toFixed(d)+"%"; }
+const DEF = {
+  US:     [{id:1,name:"Deal 1",value:1000000}],
+  IL:     [{id:2,name:"Deal 1",value:7000000},{id:3,name:"Deal 2",value:10000000},{id:4,name:"Deal 3",value:25000000}],
+  Latvia: [{id:5,name:"Deal 1",value:500000}],
+  SG:     [{id:6,name:"Deal 1",value:2000000}],
+  UK:     [{id:7,name:"Deal 1",value:300000}],
+};
+let uid = 100;
+function App() {
+  const [sel,setSel]       = useState(XFABS[1]);
+  const [sc,setSc]         = useState(1.5);
+  const [rev,setRev]       = useState(XFABS[1].revenue);
+  const [ebi,setEbi]       = useState(XFABS[1].ebitdaTarget);
+  const [exc,setExc]       = useState(false);
+  const [xfabOn,setXfabOn] = useState(true);
+  const [deals,setDeals]   = useState(DEF["IL"]);
+  const chX = x => { setSel(x); setRev(x.revenue); setEbi(x.ebitdaTarget); setExc(false); setXfabOn(true); setDeals(DEF[x.name]); };
+  const add  = ()        => setDeals(p=>[...p,{id:uid++,name:"Deal "+(p.length+1),value:1000000}]);
+  const del  = id        => setDeals(p=>p.filter(d=>d.id!==id));
+  const upd  = (id,f,v)  => setDeals(p=>p.map(d=>d.id===id?{...d,[f]:v}:d));
+  const mR = rev>=sel.revenue, mE = ebi>=sel.ebitdaTarget, ok = mR&&mE&&xfabOn;
+  const rows = useMemo(()=>deals.map(d=>{ const v=Number(d.value)||0,r=getDirRate(v,sc); return{...d,v,r,dir:v*r}; }),[deals,sc]);
+  const totV = useMemo(()=>rows.reduce((s,d)=>s+d.v,0),[rows]);
+  const totD = useMemo(()=>rows.reduce((s,d)=>s+d.dir,0),[rows]);
+  const bdRate=getBDRate(sc),potBD=totV*bdRate,surplus=Math.max(0,potBD-totD);
+  const xfRate=ok?getXFRate(sc,exc):0,xfBase=totV*xfRate,xfTotal=ok?xfBase+surplus:0,grand=totD+xfTotal;
+  const scRows=SCENARIOS.map(s=>{
+    const r=getBDRate(s),pot=totV*r;
+    const dirS=deals.reduce((acc,d)=>{ const v=Number(d.value)||0; return acc+v*getDirRate(v,s); },0);
+    const sur=Math.max(0,pot-dirS),xr=ok?getXFRate(s,exc):0,xb=totV*xr,xt=ok?xb+sur:0;
+    return {s,pot,dirS,sur,xb,xt,total:dirS+xt};
+  });
+  const sColor=ok?"#16a34a":"#dc2626",sBg=ok?"#f0fdf4":"#fef2f2";
+  return (
+    <div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+      <div style={{background:"#1e3a5f",color:"white",borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+        <h1 style={{fontSize:22,fontWeight:700}}>🏭 XFAB Bonus Simulator 2026</h1>
+        <p style={{marginTop:6,opacity:0.75,fontSize:13}}>BD Direct &amp; XFAB rates scale with scenario | BD surplus goes to XFAB Bucket</p>
+      </div>
+      <div style={{background:"white",borderRadius:10,padding:16,marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+        <div style={{fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:10}}>Select XFAB</div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          {XFABS.map(x=>(
+            <button key={x.name} onClick={()=>chX(x)} style={{padding:"8px 22px",borderRadius:8,border:"2px solid",fontSize:14,fontWeight:600,cursor:"pointer",borderColor:sel.name===x.name?"#1e3a5f":"#e5e7eb",background:sel.name===x.name?"#1e3a5f":"white",color:sel.name===x.name?"white":"#374151"}}>{x.name}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1.3fr 0.7fr",gap:16,marginBottom:16}}>
+        <div style={{background:"white",borderRadius:10,padding:20,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <h2 style={{fontSize:15,color:"#374151"}}>{sel.name} — Deals</h2>
+            <button onClick={add} style={{padding:"6px 14px",borderRadius:7,background:"#1e3a5f",color:"white",border:"none",fontSize:13,cursor:"pointer",fontWeight:600}}>+ Add Deal</button>
+          </div>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            {[["≤$5M",pp(getDirRate(1e6,sc))],["$5M–$10M",pp(getDirRate(7e6,sc))],[">$10M",pp(getDirRate(20e6,sc))]].map(([label,rate])=>(
+              <div key={label} style={{flex:1,background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:6,padding:"5px 8px",textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#0369a1"}}>{label}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#0c4a6e"}}>{rate}</div>
+              </div>
+            ))}
+            <div style={{flex:1.5,background:"#fef9c3",border:"1px solid #fde68a",borderRadius:6,padding:"5px 8px",textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#92400e"}}>Scenario</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#78350f"}}>{sc}%</div>
+            </div>
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+            <thead><tr style={{background:"#f8fafc"}}>{["Deal Name","Value ($)","Direct Rate","BD Direct Bonus",""].map(h=><th key={h} style={{padding:"7px 10px",textAlign:"left",color:"#6b7280",fontWeight:600,borderBottom:"2px solid #e5e7eb",fontSize:12}}>{h}</th>)}</tr></thead>
+            <tbody>
+              {rows.map((d,i)=>(
+                <tr key={d.id} style={{background:i%2===0?"#fafafa":"white"}}>
+                  <td style={{padding:"7px 10px"}}><input value={d.name} onChange={e=>upd(d.id,"name",e.target.value)} style={{border:"1px solid #e5e7eb",borderRadius:5,padding:"4px 7px",fontSize:12,width:85}}/></td>
+                  <td style={{padding:"7px 10px"}}><input type="number" value={d.value} onChange={e=>upd(d.id,"value",Number(e.target.value))} style={{border:"1px solid #e5e7eb",borderRadius:5,padding:"4px 7px",fontSize:12,width:115}}/></td>
+                  <td style={{padding:"7px 10px",color:"#0369a1",fontWeight:600}}>{pp(d.r)}</td>
+                  <td style={{padding:"7px 10px",color:"#92400e",fontWeight:700}}>{fmt(d.dir)}</td>
+                  <td style={{padding:"7px 10px"}}>{deals.length>1&&<button onClick={()=>del(d.id)} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:15,padding:0}}>✕</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot><tr style={{background:"#1e3a5f",color:"white"}}><td style={{padding:"8px 10px",fontWeight:700}}>Total</td><td style={{padding:"8px 10px",fontWeight:700}}>{fmt(totV)}</td><td/><td style={{padding:"8px 10px",fontWeight:700}}>{fmt(totD)}</td><td/></tr></tfoot>
+          </table>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div style={{background:"white",borderRadius:10,padding:18,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+            <h2 style={{fontSize:15,color:"#374151",marginBottom:13}}>Overall Bonus Scenario</h2>
+            <div style={{display:"flex",gap:8}}>
+              {SCENARIOS.map(s=><button key={s} onClick={()=>setSc(s)} style={{flex:1,padding:"10px 0",borderRadius:7,border:"2px solid",borderColor:sc===s?"#2563eb":"#e5e7eb",background:sc===s?"#eff6ff":"white",color:sc===s?"#1d4ed8":"#374151",fontWeight:700,fontSize:15,cursor:"pointer"}}>{s}%</button>)}
+            </div>
+            <div style={{marginTop:12,padding:"10px 12px",background:"#f8fafc",borderRadius:8,fontSize:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",color:"#374151",marginBottom:4}}><span>Potential BD Bucket ({pp(bdRate)} × {fmt(totV)})</span><strong>{fmt(potBD)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between",color:"#92400e"}}><span>BD Direct (actual)</span><strong>{fmt(totD)}</strong></div>
+              <div style={{borderTop:"1px solid #e5e7eb",marginTop:6,paddingTop:6,display:"flex",justifyContent:"space-between",color:"#7c3aed",fontWeight:700}}><span>{ok?"Surplus → XFAB":"Surplus (stays in fund)"}</span><strong>{fmt(surplus)}</strong></div>
+            </div>
+          </div>
+          <div style={{background:"white",borderRadius:10,padding:18,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+            <h2 style={{fontSize:15,color:"#374151",marginBottom:12}}>Targets vs. Actual</h2>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+              <div><div style={{fontSize:11,color:"#9ca3af"}}>Revenue Target</div><div style={{fontWeight:700,fontSize:16}}>{fmtM(sel.revenue)}</div></div>
+              <div><div style={{fontSize:11,color:"#9ca3af"}}>Revenue Actual ($M)</div><input type="number" step="0.1" value={rev} onChange={e=>setRev(Number(e.target.value))} style={{width:"100%",padding:"5px 8px",border:"1.5px solid",borderRadius:6,fontSize:13,borderColor:mR?"#86efac":"#fca5a5",background:mR?"#f0fdf4":"#fef2f2"}}/></div>
+              <div><div style={{fontSize:11,color:"#9ca3af"}}>EBITDA Target</div><div style={{fontWeight:700,fontSize:16}}>{sel.ebitdaTarget}%</div></div>
+              <div><div style={{fontSize:11,color:"#9ca3af"}}>EBITDA Actual (%)</div><input type="number" step="0.1" value={ebi} onChange={e=>setEbi(Number(e.target.value))} style={{width:"100%",padding:"5px 8px",border:"1.5px solid",borderRadius:6,fontSize:13,borderColor:mE?"#86efac":"#fca5a5",background:mE?"#f0fdf4":"#fef2f2"}}/></div>
+            </div>
+            <div style={{padding:"8px 12px",borderRadius:7,background:sBg,border:"1px solid "+sColor+"55",marginBottom:10}}>
+              <div style={{fontWeight:700,color:sColor,fontSize:13}}>{ok?"✅ Targets met — XFAB Bucket active":!xfabOn?"⛔ XFAB Bucket disabled manually":"❌ Targets not met — XFAB Bucket = $0"}</div>
+              {xfabOn&&!(mR&&mE)&&<div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{!mR&&"• Revenue below target  "}{!mE&&"• EBITDA below target"}</div>}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:"#374151"}}>
+                <input type="checkbox" checked={xfabOn} onChange={e=>setXfabOn(e.target.checked)} style={{width:14,height:14}}/>
+                <span>Enable XFAB Bucket {!xfabOn&&<strong style={{color:"#dc2626"}}>(disabled — BD Direct only)</strong>}</span>
+              </label>
+              {xfabOn&&(<>
+                <div style={{display:"flex",gap:8,marginTop:2}}>
+                  {[["Meeting Budget",getXFRate(sc,false)],["Exceeding Budget",getXFRate(sc,true)]].map(([label,rate])=>(
+                    <div key={label} style={{flex:1,background:label==="Exceeding Budget"?"#f0fdf4":"#f8fafc",border:"1px solid",borderColor:label==="Exceeding Budget"?"#86efac":"#e5e7eb",borderRadius:6,padding:"5px 8px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:"#6b7280"}}>{label}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:label==="Exceeding Budget"?"#15803d":"#374151"}}>{pp(rate)}</div>
+                    </div>
+                  ))}
+                </div>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:"#374151",paddingLeft:22}}>
+                  <input type="checkbox" checked={exc} onChange={e=>setExc(e.target.checked)} style={{width:14,height:14}}/>
+                  Exceeding Budget ({pp(getXFRate(sc,true))} instead of {pp(getXFRate(sc,false))})
+                </label>
+              </>)}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{background:"white",borderRadius:10,padding:20,marginBottom:16,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+        <h2 style={{fontSize:15,color:"#374151",marginBottom:16}}>Bucket Breakdown — {sel.name} | Scenario {sc}%</h2>
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr auto 1fr auto 1fr",alignItems:"center",marginBottom:16}}>
+          <div style={{background:"#fef9c3",borderRadius:9,padding:"14px",textAlign:"center",border:"1.5px solid #fef09333"}}><div style={{fontSize:11,color:"#78350f",marginBottom:3,fontWeight:600}}>BD Direct (actual)</div><div style={{fontSize:20,fontWeight:800,color:"#78350f"}}>{fmt(totD)}</div><div style={{fontSize:10,color:"#9ca3af",marginTop:2}}>Σ rate × each deal</div></div>
+          <div style={{textAlign:"center",padding:"0 8px",color:"#9ca3af",fontSize:22}}>+</div>
+          <div style={{background:"#eff6ff",borderRadius:9,padding:"14px",textAlign:"center",border:"1.5px solid #1d4ed833"}}><div style={{fontSize:11,color:"#1d4ed8",marginBottom:3,fontWeight:600}}>BD Bucket Surplus</div><div style={{fontSize:20,fontWeight:800,color:"#1d4ed8"}}>{fmt(surplus)}</div><div style={{fontSize:10,color:"#9ca3af",marginTop:2}}>{fmt(potBD)} − {fmt(totD)}{ok?"":" (stays in fund)"}</div></div>
+          <div style={{textAlign:"center",padding:"0 8px",color:"#9ca3af",fontSize:22}}>+</div>
+          <div style={{background:ok?"#f0fdf4":"#f9fafb",borderRadius:9,padding:"14px",textAlign:"center",border:"1.5px solid "+(ok?"#86efac":"#e5e7eb")}}><div style={{fontSize:11,color:ok?"#166534":"#9ca3af",marginBottom:3,fontWeight:600}}>XFAB Base</div><div style={{fontSize:20,fontWeight:800,color:ok?"#15803d":"#9ca3af"}}>{ok?fmt(xfBase):"$0"}</div><div style={{fontSize:10,color:"#9ca3af",marginTop:2}}>{ok?pp(xfRate)+" × "+fmt(totV):"Targets not met / disabled"}</div></div>
+          <div style={{textAlign:"center",padding:"0 8px",color:"#9ca3af",fontSize:22}}>=</div>
+          <div style={{background:"#f5f3ff",borderRadius:9,padding:"14px",textAlign:"center",border:"1.5px solid #c4b5fd"}}><div style={{fontSize:11,color:"#7c3aed",marginBottom:3,fontWeight:600}}>XFAB Bucket Total</div><div style={{fontSize:20,fontWeight:800,color:"#7c3aed"}}>{fmt(xfTotal)}</div><div style={{fontSize:10,color:"#9ca3af",marginTop:2}}>{ok?fmt(xfBase)+" + "+fmt(surplus):"$0 — BD Direct only"}</div></div>
+        </div>
+        <div style={{padding:"16px 22px",background:"#1e3a5f",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div><div style={{color:"#93c5fd",fontSize:13,fontWeight:600}}>Total Bucket</div><div style={{color:"#bfdbfe",fontSize:11,marginTop:2}}>{ok?"BD Direct "+fmt(totD)+" + XFAB Bucket "+fmt(xfTotal):"BD Direct only — BD Bucket surplus ("+fmt(surplus)+") stays in fund"}</div></div>
+          <div style={{fontSize:36,fontWeight:900,color:"white"}}>{fmt(grand)}</div>
+        </div>
+      </div>
+      <div style={{background:"white",borderRadius:10,padding:20,boxShadow:"0 1px 4px rgba(0,0,0,0.07)"}}>
+        <h2 style={{fontSize:15,color:"#374151",marginBottom:12}}>Scenario Comparison — Total Deal Value: {fmt(totV)}</h2>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+          <thead><tr style={{background:"#f1f5f9"}}>{["Scenario","BD Rate","Potential BD","BD Direct","Surplus→XFAB","XFAB Base","XFAB Bucket Total","Total"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontWeight:600,color:"#374151",borderBottom:"2px solid #e2e8f0",fontSize:11}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {scRows.map((row,i)=>{
+              const act=row.s===sc;
+              return <tr key={row.s} style={{background:act?"#eff6ff":i%2===0?"#fafafa":"white"}}>
+                <td style={{padding:"9px 12px",fontWeight:act?700:500,color:act?"#1d4ed8":"#374151"}}>{row.s}% {act?"◀":""}</td>
+                <td style={{padding:"9px 12px",color:"#6b7280"}}>{pp(getBDRate(row.s))}</td>
+                <td style={{padding:"9px 12px",color:"#6b7280"}}>{fmt(row.pot)}</td>
+                <td style={{padding:"9px 12px",color:"#92400e"}}>{fmt(row.dirS)}</td>
+                <td style={{padding:"9px 12px",color:"#7c3aed",fontWeight:600}}>{ok?fmt(row.sur):fmt(row.sur)+" (stays in fund)"}</td>
+                <td style={{padding:"9px 12px",color:ok?"#16a34a":"#9ca3af"}}>{ok?fmt(row.xb):"—"}</td>
+                <td style={{padding:"9px 12px",color:"#7c3aed",fontWeight:600}}>{ok?fmt(row.xt):"$0"}</td>
+                <td style={{padding:"9px 12px",fontWeight:800,color:"#1e3a5f",fontSize:14}}>{fmt(row.total)}</td>
+              </tr>;
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#9ca3af"}}>XFAB Bonus Simulator 2026 — open in any browser</div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+<\/script>
+</body>
+</html>`;
+
+const blob = new Blob([html], {type: "text/html;charset=utf-8"});
+const url = URL.createObjectURL(blob);
+const a = document.getElementById("dlbtn");
+a.href = url;
+a.download = "index.html";
+</script>
+</body>
+</html>
